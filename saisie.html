@@ -1,0 +1,617 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier la saisie' if saisie else 'Nouvelle saisie' }}{% endblock %}
+{% block page_title %}{{ 'Modifier la saisie' if saisie else 'Nouvelle saisie' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page-body {
+    /* يستخدم base.html padding:32px تلقائياً */
+  }
+
+  .form-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+
+  .form-card-header {
+    padding: 28px 36px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, #f8faff 0%, #fff 60%);
+  }
+
+  .form-header-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--accent-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .form-card-header h2 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .form-card-header p {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-top: 3px;
+  }
+
+  .form-body {
+    padding: 32px 36px;
+  }
+
+  .form-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+    margin-top: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 7px;
+  }
+
+  .label-req {
+    color: var(--accent);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    transition: border-color .18s, box-shadow .18s, background .18s;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  .form-control::placeholder { color: var(--ink-faint); }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    background: #fafcff;
+  }
+
+  select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A0A0A0' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 96px;
+  }
+
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .conge-dates {
+    background: linear-gradient(135deg, #f0f7ff 0%, #f8fafc 100%);
+    padding: 20px 24px;
+    border-radius: 12px;
+    border: 1.5px solid #BFDBFE;
+    margin-bottom: 20px;
+  }
+
+  .conge-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .conge-dates .form-group {
+    margin-bottom: 16px;
+  }
+
+  .conge-dates .form-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .nb-jours-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1.5px solid #BFDBFE;
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+
+  .nb-jours-display .nb-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 32px;
+  }
+
+  .nb-jours-display .nb-lbl {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  /* Radio buttons style pour durée congé */
+  .conge-radio-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .conge-radio-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 2px solid #BFDBFE;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .18s, background .18s, box-shadow .18s;
+    user-select: none;
+  }
+
+  .conge-radio-btn:hover {
+    border-color: var(--accent);
+    background: #f0f7ff;
+  }
+
+  .conge-radio-btn.active {
+    border-color: var(--accent);
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+  }
+
+  .conge-radio-btn .radio-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #BFDBFE;
+    background: #fff;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color .18s, background .18s;
+  }
+
+  .conge-radio-btn.active .radio-circle {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .conge-radio-btn.active .radio-circle::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #fff;
+    display: block;
+  }
+
+  .conge-radio-btn .radio-text { display: flex; flex-direction: column; }
+  .conge-radio-btn .radio-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .conge-radio-btn .radio-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .page-body { padding: 16px; }
+    .form-card-header, .form-body { padding: 20px; }
+    .form-grid-2 { grid-template-columns: 1fr; gap: 0; }
+    .form-actions { flex-direction: column; }
+    .form-actions .btn-primary,
+    .form-actions .btn-secondary { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+  <div class="form-card">
+    <div class="form-card-header">
+      <div class="form-header-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+          {% if saisie %}<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>{% else %}<path d="M12 5v14M5 12h14"/>{% endif %}
+        </svg>
+      </div>
+      <div>
+        <h2>{{ 'Modifier la saisie' if saisie else 'Enregistrer votre activité' }}</h2>
+        <p>{{ 'Mettez à jour les informations de cette saisie.' if saisie else 'Renseignez votre activité du jour.' }}</p>
+      </div>
+    </div>
+
+    <div class="form-body">
+      <form method="POST" id="saisieForm">
+
+        <div class="form-section-label">Informations générales</div>
+
+        <!-- Projet (caché si Congé) -->
+        <div id="projetGroup" class="form-group">
+          <label for="projet_id">Projet</label>
+          <select id="projet_id" name="projet_id" class="form-control">
+            <option value="">Interne / Hors projet</option>
+            {% for p in projets %}
+            <option value="{{ p.id }}" {{ 'selected' if saisie and saisie.projet_id == p.id }}>{{ p.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-grid-2">
+          <!-- Date (يختفي فحالة plusieurs jours) -->
+          <div class="form-group" id="dateGroup">
+            <label for="date">Date <span class="label-req">*</span></label>
+            <input type="date" id="date" name="date" class="form-control" required
+              value="{{ saisie.date.isoformat() if saisie else today.isoformat() }}">
+            <small id="error_date" style="color:#e53e3e;display:none;">&#9888; Les samedis et dimanches ne sont pas autorisés.</small>
+          </div>
+
+          <!-- Type d'activité -->
+          <div class="form-group">
+            <label for="type_activite">Type d'activité <span class="label-req">*</span></label>
+            <select id="type_activite" name="type_activite" class="form-control" required>
+              <option value="">— Sélectionner —</option>
+              {% for t in ['Liste des plans',"Note de Calcul d'Eclairement",'Prises de courant et forces','Synoptiques CFO','Carnet des câbles CFO','Bilan de puissance','Note de Calcul BT','Note de Calcul MT','Note de Calcul DC','Note de Calcul Batterie','Note de Calcul CDC','Note de Calcul de mise à la terre','Bilan Thermique','Note de Calcul paratonnerre','Eclairage','Réseau sous dallage','Réservations','Plans des locaux techniques','Mise à la terre et protection foudre','Plans CDC','Plans des locaux types','Réseau extérieur','Photovoltaïque','Schémas des tableaux','Synoptiques CFA','Réseau wifi','Sonorisation','Audiovisuel','Précâblage informatique','Système sécurité incendie','Vidéosurveillance',"Contrôle d'accès et d'intrusion","Gestion d'éclairage",'Aménagement local PCS','Carnet des câbles CFA','Gestion domotique','GTC','TBE','Congé'] %}
+              <option value="{{ t }}" {{ 'selected' if saisie and saisie.type_activite == t }}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Heures (caché si Congé) -->
+        <div id="heuresGroup" class="form-group">
+          <label for="heures">Nombre d'heures <span class="label-req">*</span></label>
+          <input type="number" id="heures" name="heures" class="form-control"
+            min="0.5" max="24" step="0.5" placeholder="ex: 4.5"
+            value="{{ saisie.heures if saisie else '' }}">
+        </div>
+
+        <!-- Champs spécifiques pour Congé (cachés par défaut) -->
+        <div id="congeGroup" class="conge-dates" style="display: none;">
+          <div class="conge-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Durée du congé
+          </div>
+
+          <!-- Sélecteur de type de durée — radio buttons -->
+          <div class="conge-radio-group">
+            <div class="conge-radio-btn active" id="radioBtn1Jour" onclick="selectCongeDuree('1jour')">
+              <div class="radio-circle"></div>
+              <div class="radio-text">
+                <span class="radio-title">≤ 1 jour</span>
+                <span class="radio-sub">Demi-journée / journée</span>
+              </div>
+            </div>
+            <div class="conge-radio-btn" id="radioBtnMulti" onclick="selectCongeDuree('multi')">
+              <div class="radio-circle"></div>
+              <div class="radio-text">
+                <span class="radio-title">Plusieurs jours</span>
+                <span class="radio-sub">Date début → Date fin</span>
+              </div>
+            </div>
+          </div>
+          <!-- Champ caché pour envoyer le type de durée au serveur -->
+          <input type="hidden" id="conge_duree_type" name="conge_duree_type" value="1jour">
+
+          <!-- Mode A : ≤ 1 jour → Nbre heures seulement -->
+          <div id="congeMode1Jour" class="form-group">
+             <div class="nb-jours-display" style="margin-bottom:6px;">
+              <span class="nb-val" style="font-size:15px;min-width:auto;">ℹ</span>
+              <span class="nb-lbl">1 jour</span>
+            </div>
+            <label for="conge_heures_1jour">Nombre d'heures <span class="label-req">*</span></label>
+            <input type="number" id="conge_heures_1jour" name="conge_heures_1jour" class="form-control"
+              min="0.5" max="8" step="0.5" placeholder="ex: 8" value="8">
+          </div>
+
+          <!-- Mode B : plusieurs jours → Date début + Date fin + Nb jours -->
+          <div id="congeModeMulti" style="display:none;">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="conge_date_debut">Date début <span class="label-req">*</span></label>
+                <input type="date" id="conge_date_debut" name="conge_date_debut" class="form-control">
+                <small id="error_conge_debut" style="color:#e53e3e;display:none;">&#9888; Les samedis et dimanches ne sont pas autorisés.</small>
+              </div>
+              <div class="form-group">
+                <label for="conge_date_fin">Date fin <span class="label-req">*</span></label>
+                <input type="date" id="conge_date_fin" name="conge_date_fin" class="form-control">
+                <small id="error_conge_fin" style="color:#e53e3e;display:none;">&#9888; Les samedis et dimanches ne sont pas autorisés.</small>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Durée calculée</label>
+              <div class="nb-jours-display">
+                <span class="nb-val" id="nbJoursVal">—</span>
+                <span class="nb-lbl">jour(s) de congé</span>
+              </div>
+            </div>
+          </div>
+
+          <input type="hidden" id="conge_nb_jours" name="conge_nb_jours">
+        </div>
+
+        <!-- Commentaire -->
+        <div class="form-section-label" style="margin-top:8px;">Commentaire</div>
+        <div class="form-group">
+          <label for="commentaire">Description</label>
+          <textarea id="commentaire" name="commentaire" class="form-control"
+            rows="4" placeholder="Décrivez brièvement votre activité…">{{ saisie.commentaire if saisie else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+            {{ 'Mettre à jour' if saisie else 'Enregistrer la saisie' }}
+          </button>
+          <a href="{{ url_for('historique') }}" class="btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Annuler
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const typeSelect       = document.getElementById('type_activite');
+  const projetGroup      = document.getElementById('projetGroup');
+  const heuresGroup      = document.getElementById('heuresGroup');
+  const dateGroup        = document.getElementById('dateGroup');
+  const congeGroup       = document.getElementById('congeGroup');
+  const heuresInput      = document.getElementById('heures');
+
+  const conge_dureeTypeEl = document.getElementById('conge_duree_type');
+  const congeMode1Jour    = document.getElementById('congeMode1Jour');
+  const congeModeMulti    = document.getElementById('congeModeMulti');
+
+  const congeDateDebut   = document.getElementById('conge_date_debut');
+  const congeDateFin     = document.getElementById('conge_date_fin');
+  const congeNbJours     = document.getElementById('conge_nb_jours');
+  const congeHeures1Jour = document.getElementById('conge_heures_1jour');
+  const dateInput        = document.getElementById('date');
+
+  function selectCongeDuree(val) {
+    conge_dureeTypeEl.value = val;
+    document.getElementById('radioBtn1Jour').classList.toggle('active', val === '1jour');
+    document.getElementById('radioBtnMulti').classList.toggle('active', val === 'multi');
+    toggleCongeDureeMode();
+  }
+
+  function calculerNbJours() {
+    const debut = congeDateDebut.value;
+    const fin   = congeDateFin.value;
+    if (debut && fin && fin >= debut) {
+      const d1 = new Date(debut);
+      const d2 = new Date(fin);
+      const diff = Math.ceil(Math.abs(d2 - d1) / 86400000) + 1;
+      document.getElementById('nbJoursVal').textContent = diff;
+      congeNbJours.value = diff;
+      heuresInput.value  = diff;  // 1 jour = 1 heure dans ce système
+    } else {
+      document.getElementById('nbJoursVal').textContent = '—';
+      congeNbJours.value = '';
+      heuresInput.value = '';
+    }
+  }
+
+  function toggleCongeDureeMode() {
+    const isMulti = conge_dureeTypeEl.value === 'multi';
+
+    congeMode1Jour.style.display  = isMulti ? 'none'  : 'block';
+    congeModeMulti.style.display  = isMulti ? 'block' : 'none';
+    dateGroup.style.display       = isMulti ? 'none'  : 'block';
+
+    // Désactiver/activer les champs pour qu'ils ne soient pas envoyés au serveur
+    congeDateDebut.disabled = !isMulti;
+    congeDateFin.disabled = !isMulti;
+    congeHeures1Jour.disabled = isMulti;
+    dateInput.disabled = isMulti;
+
+    if (isMulti) {
+      // Mode plusieurs jours
+      congeDateDebut.required = true;
+      congeDateFin.required   = true;
+      congeHeures1Jour.required = false;
+      dateInput.required = false;
+      
+      heuresInput.value = '';
+      calculerNbJours();
+    } else {
+      // Mode 1 jour
+      congeDateDebut.required   = false;
+      congeDateFin.required     = false;
+      congeHeures1Jour.required = true;
+      dateInput.required = true;
+      
+      congeDateDebut.value = '';
+      congeDateFin.value   = '';
+      congeNbJours.value   = '';
+      document.getElementById('nbJoursVal').textContent = '—';
+      heuresInput.value = congeHeures1Jour.value || 8;
+    }
+  }
+
+  function toggleCongeFields() {
+    const isConge = typeSelect.value === 'Congé';
+
+    projetGroup.style.display  = isConge ? 'none'  : 'block';
+    heuresGroup.style.display  = isConge ? 'none'  : 'block';
+    congeGroup.style.display   = isConge ? 'block' : 'none';
+
+    if (isConge) {
+      // Réinitialiser le projet
+      document.getElementById('projet_id').value = '';
+      heuresInput.value = '';
+      toggleCongeDureeMode();
+    } else {
+      // Réactiver les champs normaux
+      congeDateDebut.disabled = true;
+      congeDateFin.disabled = true;
+      congeHeures1Jour.disabled = true;
+      dateInput.disabled = false;
+      
+      congeDateDebut.required   = false;
+      congeDateFin.required     = false;
+      congeHeures1Jour.required = false;
+      dateInput.required        = true;
+      
+      congeDateDebut.value = '';
+      congeDateFin.value   = '';
+      congeNbJours.value   = '';
+      document.getElementById('nbJoursVal').textContent = '—';
+      dateGroup.style.display = 'block';
+    }
+  }
+
+  // ── Validation week-end ──
+  function isWeekend(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return d.getUTCDay() === 0 || d.getUTCDay() === 6; // 0=dim, 6=sam
+  }
+
+  function validateWeekendField(input, errorId) {
+    const err = document.getElementById(errorId);
+    if (isWeekend(input.value)) {
+      input.value = '';
+      err.style.display = 'block';
+      setTimeout(() => err.style.display = 'none', 3000);
+      return false;
+    }
+    if (err) err.style.display = 'none';
+    return true;
+  }
+
+  dateInput.addEventListener('change', function() {
+    validateWeekendField(this, 'error_date');
+  });
+
+  congeDateDebut.addEventListener('change', function() {
+    if (validateWeekendField(this, 'error_conge_debut')) calculerNbJours();
+  });
+
+  congeDateFin.addEventListener('change', function() {
+    if (validateWeekendField(this, 'error_conge_fin')) calculerNbJours();
+  });
+
+  // Bloquer la soumission si une date est un week-end
+  document.querySelector('form').addEventListener('submit', function(e) {
+    let blocked = false;
+    if (!dateInput.disabled && isWeekend(dateInput.value)) {
+      document.getElementById('error_date').style.display = 'block';
+      blocked = true;
+    }
+    if (!congeDateDebut.disabled && isWeekend(congeDateDebut.value)) {
+      document.getElementById('error_conge_debut').style.display = 'block';
+      blocked = true;
+    }
+    if (!congeDateFin.disabled && isWeekend(congeDateFin.value)) {
+      document.getElementById('error_conge_fin').style.display = 'block';
+      blocked = true;
+    }
+    if (blocked) e.preventDefault();
+  });
+
+  // ── Écouteurs d'événements ──
+  congeHeures1Jour.addEventListener('input', () => {
+    if (conge_dureeTypeEl.value !== 'multi') {
+      heuresInput.value = congeHeures1Jour.value;
+    }
+  });
+
+  typeSelect.addEventListener('change', toggleCongeFields);
+
+  // Initialisation au chargement
+  toggleCongeFields();
+
+  // Si on est en mode édition d'un congé existant
+  {% if saisie and saisie.type_activite == 'Congé' %}
+  // Déterminer si c'était un congé d'un jour ou plusieurs jours
+  // (on utilise la présence de dates de début/fin dans les données,
+  //  mais comme on n'a pas ces champs dans le modèle Saisie,
+  //  on se base sur le nombre d'heures : si > 8, c'est plusieurs jours)
+  {% if saisie.heures > 8 %}
+    // Mode plusieurs jours
+    conge_dureeTypeEl.value = 'multi';
+    // On ne peut pas restaurer les dates exactes car elles ne sont pas stockées dans Saisie
+    // On met la date de la saisie comme date de début
+    const dateSaisie = '{{ saisie.date.isoformat() }}';
+    congeDateDebut.value = dateSaisie;
+    // On calcule la date de fin en fonction du nombre d'heures (1h = 1 jour)
+    const nbJours = {{ saisie.heures | int }};
+    if (nbJours > 0) {
+      const debutDate = new Date(dateSaisie);
+      const finDate = new Date(debutDate);
+      finDate.setDate(finDate.getDate() + nbJours - 1);
+      const year = finDate.getFullYear();
+      const month = String(finDate.getMonth() + 1).padStart(2, '0');
+      const day = String(finDate.getDate()).padStart(2, '0');
+      congeDateFin.value = `${year}-${month}-${day}`;
+    }
+    toggleCongeDureeMode();
+    calculerNbJours();
+  {% else %}
+    // Mode 1 jour
+    conge_dureeTypeEl.value = '1jour';
+    congeHeures1Jour.value = '{{ saisie.heures }}';
+    toggleCongeDureeMode();
+  {% endif %}
+  {% endif %}
+</script>
+{% endblock %}

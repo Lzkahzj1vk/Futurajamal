@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Demande de congé{% endblock %}
+{% block page_title %}Demande de congé{% endblock %}
+
+{% block extra_css %}
+<style>
+  .conge-grid{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start}
+  .form-card{background:#fff;border:1px solid var(--border);border-radius:14px}
+  .form-card-header{padding:24px 28px;border-bottom:1px solid var(--border)}
+  .form-card-header h2{font-size:18px;font-weight:500;color:var(--ink)}
+  .form-card-header p{font-size:13px;color:var(--ink-faint);margin-top:4px}
+  .form-body{padding:28px}
+  .form-actions{display:flex;gap:12px;margin-top:28px;padding-top:24px;border-top:1px solid var(--border)}
+
+  /* History sidebar */
+  .conge-history{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .conge-history-header{padding:18px 20px;border-bottom:1px solid var(--border)}
+  .conge-history-header h3{font-size:14px;font-weight:600;color:var(--ink)}
+  .conge-item{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border)}
+  .conge-item:last-child{border-bottom:none}
+  .conge-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .conge-dot.en_attente{background:#D97706}
+  .conge-dot.approuve{background:#059669}
+  .conge-dot.refuse{background:#DC2626}
+  .conge-info{flex:1;min-width:0}
+  .conge-type{font-size:13px;font-weight:500;color:var(--ink)}
+  .conge-dates{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+  .conge-status{font-size:11px;font-weight:500;padding:3px 8px;border-radius:20px}
+  .conge-status.en_attente{background:#FFFBEB;color:#D97706}
+  .conge-status.approuve{background:#ECFDF5;color:#059669}
+  .conge-status.refuse{background:#FEF2F2;color:#DC2626}
+  .conge-empty{padding:24px;text-align:center;color:var(--ink-faint);font-size:13px}
+.filter-status-btn.active {
+  background: var(--accent) !important;
+  color: white !important;
+  border-color: var(--accent) !important;
+}
+  @media(max-width:900px){
+    .conge-grid{grid-template-columns:1fr}
+ 
+ 
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+  <div class="conge-grid">
+
+    <!-- Form -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <h2>Nouvelle demande de congé</h2>
+        <p>Soumettez votre demande pour validation.</p>
+      </div>
+      <div class="form-body">
+        <form method="POST">
+
+          <!-- Type -->
+          <div class="form-group">
+            <label for="type_conge">Type de congé *</label>
+            <select id="type_conge" name="type_conge" class="form-control" required>
+              <option value="">— Sélectionner —</option>
+              <option value="Congé annuel">Congé annuel</option>
+              <option value="Congé maladie">Congé maladie</option>
+              <option value="Congé sans solde">Congé sans solde</option>
+              <option value="Congé exceptionnel">Congé exceptionnel</option>
+              <option value="RTT">RTT</option>
+            </select>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="date_debut">Date de début *</label>
+              <input type="date" id="date_debut" name="date_debut" class="form-control" required onchange="validateWeekend(this, 'error_debut'); calcDays()">
+              <small id="error_debut" style="color:#e53e3e;display:none;">&#9888;  Les samedis et dimanches ne sont pas autorisés.</small>
+            </div>
+            <div class="form-group">
+              <label for="date_fin">Date de fin *</label>
+              <input type="date" id="date_fin" name="date_fin" class="form-control" required onchange="validateWeekend(this, 'error_fin'); calcDays()">
+              <small id="error_fin" style="color:#e53e3e;display:none;">&#9888; Les samedis et dimanches ne sont pas autorisés.</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="nb_jours">Nombre de jours *</label>
+            <input type="number" id="nb_jours" name="nb_jours" class="form-control"
+              min="1" placeholder="Calculé automatiquement" required>
+          </div>
+
+          <div class="form-group">
+            <label for="motif">Motif (optionnel)</label>
+            <textarea id="motif" name="motif" class="form-control" rows="3"
+              placeholder="Précisez le motif si nécessaire…"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+              Envoyer la demande
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn-secondary">Annuler</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  <!-- History sidebar -->
+<div class="conge-history">
+  <div class="conge-history-header">
+    <h3>Mes demandes</h3>
+  </div>
+  
+  <!-- Stats summary -->
+  <div style="padding: 16px 20px; background: var(--cream); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+    <div style="text-align: center; flex: 1;">
+      <span style="font-size: 11px; color: var(--ink-faint);">En attente</span>
+      <div style="font-size: 20px; font-weight: 600; color: #D97706;">{{ mes_conges|selectattr('statut', 'equalto', 'en_attente')|list|length }}</div>
+    </div>
+    <div style="text-align: center; flex: 1;">
+      <span style="font-size: 11px; color: var(--ink-faint);">Approuvés</span>
+      <div style="font-size: 20px; font-weight: 600; color: #059669;">{{ mes_conges|selectattr('statut', 'equalto', 'approuve')|list|length }}</div>
+    </div>
+    <div style="text-align: center; flex: 1;">
+      <span style="font-size: 11px; color: var(--ink-faint);">Total jours</span>
+      <div style="font-size: 20px; font-weight: 600; color: var(--ink);">{{ mes_conges|sum(attribute='nb_jours') }}</div>
+    </div>
+  </div>
+  
+  <!-- Filter buttons -->
+  <div style="padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap;">
+    <button class="filter-status-btn active" data-status="all" style="padding: 5px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); background: transparent; cursor: pointer; transition: all 0.2s;">Toutes</button>
+    <button class="filter-status-btn" data-status="en_attente" style="padding: 5px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); background: transparent; cursor: pointer;">⏳ En attente</button>
+    <button class="filter-status-btn" data-status="approuve" style="padding: 5px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); background: transparent; cursor: pointer;">✓ Approuvés</button>
+    <button class="filter-status-btn" data-status="refuse" style="padding: 5px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); background: transparent; cursor: pointer;">✗ Refusés</button>
+  </div>
+  
+  <!-- List of requests -->
+  {% if mes_conges %}
+    {% for c in mes_conges %}
+    <div class="conge-item" data-status="{{ c.statut }}">
+      <div class="conge-dot {{ c.statut }}"></div>
+      <div class="conge-info">
+        <div class="conge-type">{{ c.type_conge }}</div>
+        <div class="conge-dates">
+          {{ c.date_debut.strftime('%d/%m/%Y') }} → {{ c.date_fin.strftime('%d/%m/%Y') }}
+          · {{ c.nb_jours }} jour(s)
+        </div>
+        {% if c.motif %}
+        <div class="conge-motif" style="font-size: 11px; color: var(--ink-faint); margin-top: 4px;">
+          📝 {{ c.motif[:50] }}{% if c.motif|length > 50 %}...{% endif %}
+        </div>
+        {% endif %}
+        <div style="font-size: 10px; color: var(--ink-faint); margin-top: 4px;">
+          📅 Demandé le {{ c.created_at.strftime('%d/%m/%Y') }}
+        </div>
+      </div>
+      <span class="conge-status {{ c.statut }}">
+        {% if c.statut == 'en_attente' %}
+          ⏳ En attente
+        {% elif c.statut == 'approuve' %}
+          ✓ Approuvé
+        {% else %}
+          ✗ Refusé
+        {% endif %}
+      </span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="conge-empty">Aucune demande pour le moment.</div>
+  {% endif %}
+</div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function isWeekend(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const day = d.getUTCDay(); // 0=dim, 6=sam
+  return day === 0 || day === 6;
+}
+
+function validateWeekend(input, errorId) {
+  const err = document.getElementById(errorId);
+  if (isWeekend(input.value)) {
+    input.value = '';
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 3000);
+    return false;
+  }
+  err.style.display = 'none';
+  return true;
+}
+
+function calcDays(){
+  const d1 = document.getElementById('date_debut').value;
+  const d2 = document.getElementById('date_fin').value;
+  if(d1 && d2){
+    const diff = (new Date(d2) - new Date(d1)) / (1000*60*60*24) + 1;
+    if(diff > 0) document.getElementById('nb_jours').value = diff;
+  }
+}
+
+// Bloquer soumission si dates week-end
+document.querySelector('form') && document.querySelector('form').addEventListener('submit', function(e) {
+  const d1 = document.getElementById('date_debut');
+  const d2 = document.getElementById('date_fin');
+  let blocked = false;
+  if (d1 && isWeekend(d1.value)) {
+    document.getElementById('error_debut').style.display = 'block';
+    blocked = true;
+  }
+  if (d2 && isWeekend(d2.value)) {
+    document.getElementById('error_fin').style.display = 'block';
+    blocked = true;
+  }
+  if (blocked) e.preventDefault();
+});
+
+// Filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const filterBtns = document.querySelectorAll('.filter-status-btn');
+  const congeItems = document.querySelectorAll('.conge-item');
+  
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      // Remove active class from all buttons
+      filterBtns.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      this.classList.add('active');
+      
+      const status = this.dataset.status;
+      
+      congeItems.forEach(item => {
+        if (status === 'all' || item.dataset.status === status) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

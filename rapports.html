@@ -1,0 +1,948 @@
+<!-- rapports.html -->
+{% extends "base.html" %}
+{% block title %}Rapports{% endblock %}
+{% block page_title %}Rapports & Analyses{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Section headers ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-divider {
+    margin: 36px 0 28px;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .filter-group label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .filter-select, .filter-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    background: var(--cream);
+    min-width: 140px;
+    color: var(--ink);
+  }
+  .filter-select:focus, .filter-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .filter-actions {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
+  .btn-filter, .btn-exporter, .btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-filter {
+    background: var(--accent);
+    border: none;
+    color: white;
+  }
+  .btn-filter:hover { background: #1D4ED8; }
+  .btn-exporter {
+    background: var(--white);
+    border: 1px solid var(--border);
+    color: var(--ink);
+  }
+  .btn-exporter:hover {
+    background: var(--cream);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+  }
+  .btn-reset:hover {
+    background: var(--cream);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Export dropdown ── */
+  .export-dropdown { position: relative; }
+  .export-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.1);
+    min-width: 200px;
+    display: none;
+    z-index: 100;
+    overflow: hidden;
+  }
+  .export-menu.show { display: block; }
+  .export-menu-label {
+    padding: 8px 16px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink-faint);
+  }
+  .export-menu a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .export-menu a:hover {
+    background: var(--cream);
+    color: var(--accent);
+  }
+
+  /* ── Stats mini ── */
+  .stats-mini {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .stat-mini {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    flex: 1;
+    min-width: 120px;
+  }
+  .stat-mini .stat-val {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 26px;
+    font-weight: 300;
+    color: var(--ink);
+    display: block;
+    letter-spacing: -0.5px;
+  }
+  .stat-mini .stat-desc {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+
+  /* ── Table shared ── */
+  .rapport-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .rapport-table th {
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink-soft);
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+  }
+  .rapport-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--ink);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .rapport-table tbody tr:last-child td { border-bottom: none; }
+  .rapport-table tbody tr:hover { background: #FAFAF8; }
+  .rapport-table tfoot td {
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    background: var(--cream);
+  }
+
+  /* ── Status badges ── */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .status-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-en_attente {
+    background: #FFFBEB;
+    color: #D97706;
+  }
+  .status-en_attente::before { background: #D97706; }
+  .status-approuve {
+    background: #ECFDF5;
+    color: #059669;
+  }
+  .status-approuve::before { background: #059669; }
+  .status-refuse {
+    background: #FEF2F2;
+    color: #DC2626;
+  }
+  .status-refuse::before { background: #DC2626; }
+
+  /* ── Pending task notice ── */
+  .pending-notice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    color: #92400E;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+  .pending-notice svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  /* ── Empty state ── */
+  .empty-row td {
+    text-align: center;
+    color: var(--ink-faint);
+    padding: 32px;
+    font-size: 13px;
+  }
+
+  /* ── Export buttons bar ── */
+  .export-bar {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 800px) {
+    .filter-row { flex-direction: column; align-items: stretch; }
+    .filter-actions { margin-left: 0; justify-content: flex-end; }
+    .stats-mini { flex-direction: column; }
+    .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .export-bar { justify-content: flex-start; }
+  }
+
+  .file-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:8px;vertical-align:middle;transition:transform .18s ease,filter .18s ease;}
+  .file-icon svg{width:18px;height:18px;}
+  .csv-icon{color:#22c55e;}
+  .excel-icon{color:#16a34a;}
+  .pdf-icon{color:#ef4444;}
+  .export-menu a:hover .file-icon{transform:translateY(-1px) scale(1.08);filter:drop-shadow(0 3px 8px rgba(0,0,0,.18));}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+
+  <!-- ================================================ -->
+  <!-- EXPORT BUTTONS BAR (Séparés + Groupé)            -->
+  <!-- ================================================ -->
+  <div class="export-bar">
+    <!-- Export Saisies seulement -->
+    <div class="export-dropdown">
+      <button id="exportSaisiesBtn" class="btn-exporter">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Exporter Saisies ▼
+      </button>
+      <div id="exportSaisiesMenu" class="export-menu">
+        <div class="export-menu-label">Saisies uniquement</div>
+        <a href="#" data-type="saisies" data-format="csv"><span class="file-icon csv-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" stroke="currentColor" stroke-width="2"/><path d="M14 2v5h5" stroke="currentColor" stroke-width="2"/><text x="12" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="Arial">CSV</text></svg></span> CSV (.csv)</a>
+        <a href="#" data-type="saisies" data-format="xlsx"><span class="file-icon excel-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" stroke="currentColor" stroke-width="2"/><path d="M14 2v5h5" stroke="currentColor" stroke-width="2"/><path d="M9 10l4 6M13 10l-4 6" stroke="currentColor" stroke-width="2"/></svg></span> Excel (.xlsx)</a>
+        <a href="#" data-type="saisies" data-format="pdf"><span class="file-icon pdf-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" stroke="currentColor" stroke-width="2"/><path d="M14 2v5h5" stroke="currentColor" stroke-width="2"/><text x="12" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="Arial">PDF</text></svg></span> PDF (.pdf)</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================ -->
+  <!-- SECTION 1 — SAISIES (Tâches)                    -->
+  <!-- ================================================ -->
+  <div class="section-header">
+    <div class="section-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Historique des saisies
+    </div>
+   
+  </div>
+
+  <!-- Pending notice for unapproved tasks -->
+  <div class="pending-notice" id="pendingNotice" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="pendingNoticeText">Vous avez des saisies en attente d'approbation.</span>
+  </div>
+
+
+  <!-- Filters Saisies -->
+  <!-- ========== تعديل: Projet/Client أولاً ثم Type ========== -->
+  <div class="filter-bar">
+    <div class="filter-row">
+      <!-- Projet / Client en premier -->
+      <div class="filter-group">
+        <label>Projet / Client</label>
+        <select id="saisieFilterProjet" class="filter-select">
+          <option value="">Tous les projets</option>
+          {% for p in projets %}
+          <option value="{{ p.id }}">{{ p.display_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <!-- Type d'activité en deuxième -->
+      <div class="filter-group">
+        <label>Type d'activité</label>
+        <select id="saisieFilterType" class="filter-select">
+          <option value="">Tous les types</option>
+          <option value="Liste des plans">Liste des plans</option>
+          <option value="Note de Calcul d'Eclairement">Note de Calcul d'Eclairement</option>
+          <option value="Prises de courant et forces">Prises de courant et forces</option>
+          <option value="Synoptiques CFO">Synoptiques CFO</option>
+          <option value="Carnet des câbles CFO">Carnet des câbles CFO</option>
+          <option value="Bilan de puissance">Bilan de puissance</option>
+          <option value="Note de Calcul BT">Note de Calcul BT</option>
+          <option value="Note de Calcul MT">Note de Calcul MT</option>
+          <option value="Note de Calcul DC">Note de Calcul DC</option>
+          <option value="Note de Calcul Batterie">Note de Calcul Batterie</option>
+          <option value="Note de Calcul CDC">Note de Calcul CDC</option>
+          <option value="Note de Calcul de mise à la terre">Note de Calcul de mise à la terre</option>
+          <option value="Bilan Thermique">Bilan Thermique</option>
+          <option value="Note de Calcul paratonnerre">Note de Calcul paratonnerre</option>
+          <option value="Eclairage">Eclairage</option>
+          <option value="Réseau sous dallage">Réseau sous dallage</option>
+          <option value="Réservations">Réservations</option>
+          <option value="Plans des locaux techniques">Plans des locaux techniques</option>
+          <option value="Mise à la terre et protection foudre">Mise à la terre et protection foudre</option>
+          <option value="Plans CDC">Plans CDC</option>
+          <option value="Plans des locaux types">Plans des locaux types</option>
+          <option value="Réseau extérieur">Réseau extérieur</option>
+          <option value="Photovoltaïque">Photovoltaïque</option>
+          <option value="Schémas des tableaux">Schémas des tableaux</option>
+          <option value="Synoptiques CFA">Synoptiques CFA</option>
+          <option value="Réseau wifi">Réseau wifi</option>
+          <option value="Sonorisation">Sonorisation</option>
+          <option value="Audiovisuel">Audiovisuel</option>
+          <option value="Précâblage informatique">Précâblage informatique</option>
+          <option value="Système sécurité incendie">Système sécurité incendie</option>
+          <option value="Vidéosurveillance">Vidéosurveillance</option>
+          <option value="Contrôle d'accès et d'intrusion">Contrôle d'accès et d'intrusion</option>
+          <option value="Gestion d'éclairage">Gestion d'éclairage</option>
+          <option value="Aménagement local PCS">Aménagement local PCS</option>
+          <option value="Carnet des câbles CFA">Carnet des câbles CFA</option>
+          <option value="Gestion domotique">Gestion domotique</option>
+          <option value="GTC">GTC</option>
+          <option value="TBE">TBE</option>
+          <option value="Congé">Congé</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Date début</label>
+        <input type="date" id="saisieDateDebut" class="filter-input">
+      </div>
+      <div class="filter-group">
+        <label>Date fin</label>
+        <input type="date" id="saisieDateFin" class="filter-input">
+      </div>
+      <div class="filter-actions">
+        <button id="saisieBtnFilter" class="btn-filter">Filtrer</button>
+        <button id="saisieBtnReset" class="btn-reset">Réinitialiser</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Saisies -->
+  <div class="stats-mini">
+    <div class="stat-mini">
+      <span class="stat-val" id="saisieTotalHeures">0h</span>
+      <div class="stat-desc">Total heures</div>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-val" id="saisieTotalSaisies">0</span>
+      <div class="stat-desc">Nombre de saisies</div>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-val" id="saisieEnAttente">0</span>
+      <div class="stat-desc">En attente d'approbation</div>
+    </div>
+  </div>
+  
+  <!-- Table Saisies -->
+  <!-- ========== تعديل: ترتيب الأعمدة Projet/Client ثم Type ========== -->
+  <div class="card" style="margin-bottom: 0;">
+    <div style="overflow-x:auto;">
+      <table class="rapport-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Projet / Client</th>
+            <th>Type</th>
+            <th>Commentaire</th>
+            <th style="text-align:right;">Heures</th>
+            <th style="text-align:center;">Statut</th>
+          </tr>
+        </thead>
+        <tbody id="saisieTableBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">Total heures</td>
+            <td style="text-align:right;" id="saisieFooterTotal">0h</td>
+            <td></td>
+          </tr>
+        </tfoot>
+       </table>
+    </div>
+  </div>
+
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // ============================================
+  // STATE
+  // ============================================
+  let saisiesData = [];
+  let congesData = [];
+
+  // ============================================
+  // LOAD DATA - Via API JSON
+  // ============================================
+  async function loadData() {
+    try {
+      // Charger les saisies via API JSON
+      const saisiesResp = await fetch('/api/saisies');
+      if (saisiesResp.ok) {
+        saisiesData = await saisiesResp.json();
+      } else {
+        await loadSaisiesFromCSV();
+      }
+
+      // Charger les congés via API JSON
+      const congesResp = await fetch('/api/conges');
+      if (congesResp.ok) {
+        congesData = await congesResp.json();
+      } else {
+        await loadCongesFromCSV();
+      }
+
+      displaySaisies(saisiesData);
+      displayConges(congesData);
+      checkPendingTasks();
+
+    } catch(e) {
+      console.error('Erreur chargement:', e);
+    }
+  }
+
+  async function loadSaisiesFromCSV() {
+    try {
+      const resp = await fetch('/exporter/saisies/csv');
+      if (!resp.ok) return;
+      const text = await resp.text();
+      const lines = text.trim().split('\n');
+      saisiesData = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(';');
+        if (cols.length < 4 || cols[0] === '') continue;
+        saisiesData.push({
+          date: cols[0]?.replace(/"/g,'') || '',
+          type: cols[1]?.replace(/"/g,'') || '',
+          projet: cols[2]?.replace(/"/g,'') || '',
+          heures: parseFloat(cols[3]) || 0,
+          commentaire: cols[4]?.replace(/"/g,'') || '',
+          statut: cols[5]?.replace(/"/g,'').trim() || 'en_attente'
+        });
+      }
+    } catch(e) { console.error('Erreur saisies CSV:', e); }
+  }
+
+  async function loadCongesFromCSV() {
+    try {
+      const resp = await fetch('/exporter/conges/csv');
+      if (!resp.ok) return;
+      const text = await resp.text();
+      const lines = text.trim().split('\n');
+      congesData = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(';');
+        if (cols.length < 6 || cols[0] === '') continue;
+        congesData.push({
+          created_at: cols[0]?.replace(/"/g,'') || '',
+          type: cols[1]?.replace(/"/g,'') || '',
+          date_debut: cols[2]?.replace(/"/g,'') || '',
+          date_fin: cols[3]?.replace(/"/g,'') || '',
+          nb_jours: parseInt(cols[4]) || 0,
+          motif: cols[5]?.replace(/"/g,'') || '',
+          statut: cols[6]?.replace(/"/g,'').trim() || 'en_attente'
+        });
+      }
+    } catch(e) { console.error('Erreur congés CSV:', e); }
+  }
+
+  // ============================================
+  // DISPLAY SAISIES
+  // ============================================
+ 
+function formatDate(dateStr) {
+  if (!dateStr || dateStr === 'None' || dateStr === 'null') return '—';
+  
+  dateStr = String(dateStr).trim();
+  
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
+  
+  let datePart = dateStr.split(' ')[0].split('T')[0];
+  
+  const parts = datePart.split('-');
+  if (parts.length === 3 && parts[0].length === 4) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  
+  return dateStr;
+}
+
+function displaySaisies(data) {
+  const tbody = document.getElementById('saisieTableBody');
+  const footerTotal = document.getElementById('saisieFooterTotal');
+  const statTotal = document.getElementById('saisieTotalHeures');
+  const statCount = document.getElementById('saisieTotalSaisies');
+  const statPending = document.getElementById('saisieEnAttente');
+
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucune saisie trouvée</td></tr>';
+    footerTotal.textContent = '0h';
+    if (statTotal) statTotal.textContent = '0h';
+    if (statCount) statCount.textContent = '0';
+    if (statPending) statPending.textContent = '0';
+    return;
+  }
+
+  let totalH = 0;
+  let pendingCount = 0;
+
+  data.forEach(s => {
+    const isConge = (s.type === 'Congé' || s.type_activite === 'Congé');
+    let heuresFloat = parseFloat(s.heures) || 0;
+    let nbJours = parseInt(s.nb_jours) || 0;
+    
+    const dateDebutRaw = s.conge_date_debut || s.date_debut || null;
+    const dateFinRaw = s.conge_date_fin || s.date_fin || null;
+    
+    const dateDebut = formatDate(dateDebutRaw);
+    const dateFin = formatDate(dateFinRaw);
+    
+    const estMultiJours = isConge && dateDebutRaw && dateFinRaw && dateDebutRaw !== dateFinRaw;
+    const estUnJour = isConge && dateDebutRaw && dateFinRaw && dateDebutRaw === dateFinRaw;
+    
+    if (isConge) {
+      if (nbJours > 0) {
+        heuresFloat = nbJours * 8;
+      } else if (estMultiJours) {
+        if (heuresFloat <= 31) {
+          heuresFloat = heuresFloat * 8;
+        }
+      } else if (estUnJour || (!estMultiJours && heuresFloat === 1)) {
+        heuresFloat = 8;
+      }
+    }
+    
+    totalH += heuresFloat;
+    
+    if (s.statut === 'en_attente') pendingCount++;
+
+    let statutHtml = '';
+    if (s.statut === 'valide' || s.statut === 'approuve') {
+      statutHtml = `<span class="status-badge status-approuve">✓ Validé</span>`;
+    } else if (s.statut === 'rejete' || s.statut === 'refuse') {
+      statutHtml = `<span class="status-badge status-refuse">✗ Rejeté</span>`;
+    } else {
+      statutHtml = `<span class="status-badge status-en_attente">⏳ En attente</span>`;
+    }
+
+    let dateDisplay = formatDate(s.date);
+    
+    if (isConge && dateDebut && dateFin && dateDebut !== '—' && dateFin !== '—') {
+      if (dateDebutRaw === dateFinRaw || dateDebut === dateFin) {
+        dateDisplay = dateDebut;
+      } else {
+        dateDisplay = `${dateDebut} → ${dateFin}`;
+      }
+    }
+
+    let heureStr = Number.isInteger(heuresFloat) ? heuresFloat + 'h' : heuresFloat.toFixed(1) + 'h';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${dateDisplay}</td>
+      <td>${s.projet || s.projet_display || 'Interne'}</td>
+      <td><span class="badge badge-blue">${s.type || s.type_activite || '—'}</span></td>
+      <td style="color:var(--ink-soft);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${s.commentaire || ''}">${s.commentaire || '—'}</td>
+      <td style="text-align:right;font-weight:500;">${heureStr}</td>
+      <td style="text-align:center;">${statutHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const hDisplay = Number.isInteger(totalH) ? totalH + 'h' : totalH.toFixed(1) + 'h';
+  footerTotal.textContent = hDisplay;
+  if (statTotal) statTotal.textContent = hDisplay;
+  if (statCount) statCount.textContent = data.length;
+  if (statPending) statPending.textContent = pendingCount;
+}
+  // ============================================
+  // DISPLAY CONGÉS
+  // ============================================
+  function displayConges(data) {
+    const tbody = document.getElementById('congeTableBody');
+    const statDemandes = document.getElementById('congeTotalDemandes');
+    const statJours = document.getElementById('congeTotalJours');
+    const statAttente = document.getElementById('congeEnAttente');
+    const statApprouve = document.getElementById('congeApprouve');
+
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucune demande de congé trouvée</td></tr>';
+      if (statDemandes) statDemandes.textContent = '0';
+      if (statJours) statJours.textContent = '0';
+      if (statAttente) statAttente.textContent = '0';
+      if (statApprouve) statApprouve.textContent = '0';
+      return;
+    }
+
+    let totalJ = 0, cntAttente = 0, cntApprouve = 0;
+
+    data.forEach(c => {
+      totalJ += parseInt(c.nb_jours) || 0;
+      if (c.statut === 'en_attente') cntAttente++;
+      if (c.statut === 'approuve') cntApprouve++;
+
+      const statutLabel = {
+        'en_attente': 'En attente',
+        'approuve': 'Approuvé',
+        'refuse': 'Refusé'
+      }[c.statut] || c.statut;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.created_at || '—'}</td>
+        <td>${c.type || '—'}</td>
+        <td>${c.date_debut || '—'} → ${c.date_fin || '—'}</td>
+        <td style="text-align:center;font-weight:500;">${c.nb_jours || 0} j</td>
+        <td style="color:var(--ink-soft);">${c.motif || '—'}</td>
+        <td style="text-align:center;"><span class="status-badge status-${c.statut}">${statutLabel}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (statDemandes) statDemandes.textContent = data.length;
+    if (statJours) statJours.textContent = totalJ;
+    if (statAttente) statAttente.textContent = cntAttente;
+    if (statApprouve) statApprouve.textContent = cntApprouve;
+  }
+
+  // ============================================
+  // PENDING TASK NOTICE
+  // ============================================
+  function checkPendingTasks() {
+    const pending = saisiesData.filter(s => s.statut === 'en_attente');
+    const notice = document.getElementById('pendingNotice');
+    const noticeText = document.getElementById('pendingNoticeText');
+    if (!notice) return;
+    if (pending.length > 0) {
+      notice.style.display = 'inline-flex';
+      if (noticeText) noticeText.textContent = `${pending.length} saisie(s) en attente d'approbation.`;
+    } else {
+      notice.style.display = 'none';
+    }
+  }
+
+  // ============================================
+  // FILTER FUNCTIONS
+  // ============================================
+  function getSaisieFilterParams() {
+    const params = new URLSearchParams();
+    const type = document.getElementById('saisieFilterType')?.value;
+    const projet = document.getElementById('saisieFilterProjet')?.value;
+    const dateDebut = document.getElementById('saisieDateDebut')?.value;
+    const dateFin = document.getElementById('saisieDateFin')?.value;
+    if (type) params.append('type', type);
+    if (projet) params.append('projet', projet);
+    if (dateDebut) params.append('date_debut', dateDebut);
+    if (dateFin) params.append('date_fin', dateFin);
+    return params;
+  }
+
+  function getCongeFilterParams() {
+    const params = new URLSearchParams();
+    const type = document.getElementById('congeFilterType')?.value;
+    const statut = document.getElementById('congeFilterStatut')?.value;
+    const dateDebut = document.getElementById('congeDateDebut')?.value;
+    const dateFin = document.getElementById('congeDateFin')?.value;
+    if (type) params.append('type', type);
+    if (statut) params.append('statut', statut);
+    if (dateDebut) params.append('date_debut', dateDebut);
+    if (dateFin) params.append('date_fin', dateFin);
+    return params;
+  }
+
+  async function filterSaisies() {
+    const params = getSaisieFilterParams();
+    try {
+      const resp = await fetch(`/api/saisies?${params.toString()}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        displaySaisies(data);
+      } else {
+        const csvResp = await fetch(`/exporter/saisies/csv?${params.toString()}`);
+        const text = await csvResp.text();
+        const lines = text.trim().split('\n');
+        const filtered = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(';');
+          if (cols.length < 4 || cols[0] === '') continue;
+          filtered.push({
+            date: cols[0]?.replace(/"/g,''),
+            type: cols[1]?.replace(/"/g,''),
+            projet: cols[2]?.replace(/"/g,''),
+            heures: parseFloat(cols[3]) || 0,
+            commentaire: cols[4]?.replace(/"/g,''),
+            statut: cols[5]?.replace(/"/g,'').trim() || 'en_attente'
+          });
+        }
+        displaySaisies(filtered);
+      }
+    } catch(e) { console.error('Filtre saisies:', e); }
+  }
+
+  function resetSaisiesFilters() {
+    const typeInput = document.getElementById('saisieFilterType');
+    const projetInput = document.getElementById('saisieFilterProjet');
+    const dateDebutInput = document.getElementById('saisieDateDebut');
+    const dateFinInput = document.getElementById('saisieDateFin');
+    if (typeInput) typeInput.value = '';
+    if (projetInput) projetInput.value = '';
+    if (dateDebutInput) dateDebutInput.value = '';
+    if (dateFinInput) dateFinInput.value = '';
+    displaySaisies(saisiesData);
+  }
+
+  async function filterConges() {
+    const params = getCongeFilterParams();
+    try {
+      const resp = await fetch(`/api/conges?${params.toString()}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        displayConges(data);
+      } else {
+        const csvResp = await fetch(`/exporter/conges/csv?${params.toString()}`);
+        const text = await csvResp.text();
+        const lines = text.trim().split('\n');
+        const filtered = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(';');
+          if (cols.length < 6 || cols[0] === '') continue;
+          filtered.push({
+            created_at: cols[0]?.replace(/"/g,''),
+            type: cols[1]?.replace(/"/g,''),
+            date_debut: cols[2]?.replace(/"/g,''),
+            date_fin: cols[3]?.replace(/"/g,''),
+            nb_jours: parseInt(cols[4]) || 0,
+            motif: cols[5]?.replace(/"/g,''),
+            statut: cols[6]?.replace(/"/g,'').trim() || 'en_attente'
+          });
+        }
+        displayConges(filtered);
+      }
+    } catch(e) { console.error('Filtre congés:', e); }
+  }
+
+  function resetCongesFilters() {
+    const typeInput = document.getElementById('congeFilterType');
+    const statutInput = document.getElementById('congeFilterStatut');
+    const dateDebutInput = document.getElementById('congeDateDebut');
+    const dateFinInput = document.getElementById('congeDateFin');
+    if (typeInput) typeInput.value = '';
+    if (statutInput) statutInput.value = '';
+    if (dateDebutInput) dateDebutInput.value = '';
+    if (dateFinInput) dateFinInput.value = '';
+    displayConges(congesData);
+  }
+
+  // ============================================
+  // EXPORT FUNCTIONS
+  // ============================================
+  function exportSaisies(format) {
+    const params = getSaisieFilterParams();
+    window.location.href = `/exporter/${format}?${params.toString()}`;
+  }
+
+  function exportConges(format) {
+    const params = getCongeFilterParams();
+    window.location.href = `/exporter/conges/${format}?${params.toString()}`;
+  }
+
+  function exportComplet(format) {
+    const saisieParams = getSaisieFilterParams();
+    const congeParams = getCongeFilterParams();
+    const allParams = new URLSearchParams();
+    for (const [key, value] of saisieParams) allParams.append(key, value);
+    for (const [key, value] of congeParams) allParams.append(key, value);
+    window.location.href = `/exporter/rapport-complet/${format}?${allParams.toString()}`;
+  }
+
+  // ============================================
+  // SETUP EXPORT DROPDOWNS
+  // ============================================
+  function setupExportDropdowns() {
+    // Export Saisies
+    const saisiesBtn = document.getElementById('exportSaisiesBtn');
+    const saisiesMenu = document.getElementById('exportSaisiesMenu');
+    if (saisiesBtn && saisiesMenu) {
+      saisiesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saisiesMenu.classList.toggle('show');
+      });
+      saisiesMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const format = link.dataset.format;
+          exportSaisies(format);
+          saisiesMenu.classList.remove('show');
+        });
+      });
+    }
+
+    // Export Congés
+    const congesBtn = document.getElementById('exportCongesBtn');
+    const congesMenu = document.getElementById('exportCongesMenu');
+    if (congesBtn && congesMenu) {
+      congesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        congesMenu.classList.toggle('show');
+      });
+      congesMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const format = link.dataset.format;
+          exportConges(format);
+          congesMenu.classList.remove('show');
+        });
+      });
+    }
+
+    // Export Complet
+    const completBtn = document.getElementById('exportCompletBtn');
+    const completMenu = document.getElementById('exportCompletMenu');
+    if (completBtn && completMenu) {
+      completBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        completMenu.classList.toggle('show');
+      });
+      completMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const format = link.dataset.format;
+          exportComplet(format);
+          completMenu.classList.remove('show');
+        });
+      });
+    }
+
+    // Close menus when clicking outside
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.export-menu').forEach(menu => {
+        menu.classList.remove('show');
+      });
+    });
+  }
+
+  // ============================================
+  // INIT
+  // ============================================
+  document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    setupExportDropdowns();
+
+    const saisieFilterBtn = document.getElementById('saisieBtnFilter');
+    const saisieResetBtn = document.getElementById('saisieBtnReset');
+    const congeFilterBtn = document.getElementById('congeBtnFilter');
+    const congeResetBtn = document.getElementById('congeBtnReset');
+
+    if (saisieFilterBtn) saisieFilterBtn.addEventListener('click', filterSaisies);
+    if (saisieResetBtn) saisieResetBtn.addEventListener('click', resetSaisiesFilters);
+    if (congeFilterBtn) congeFilterBtn.addEventListener('click', filterConges);
+    if (congeResetBtn) congeResetBtn.addEventListener('click', resetCongesFilters);
+  });
+</script>
+{% endblock %}

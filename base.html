@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Futura Expertise — {% block title %}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --cream:#ffffff;--white:#FFFFFF;--ink:#1A1A1A;--ink-soft:#5A5A5A;
+      --ink-faint:#A0A0A0;--accent:#2563EB;--accent-light:#EEF3FD;
+      --border:#E8E4DC;--nav-width:240px;
+      --success:#059669;--warning:#D97706;--error:#DC2626;
+    }
+    html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+
+    /* ── App Shell ── */
+    .app{display:grid;grid-template-columns:var(--nav-width) 1fr;min-height:100vh}
+
+    /* ── Sidebar ── */
+    .sidebar{background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+    .sidebar-brand{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .brand-icon{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .brand-icon svg{width:17px;height:17px}
+    .brand-name{font-size:16px;font-weight:600;color:var(--ink)}
+    .brand-tagline{font-size:11px;color:var(--ink-faint);display:block;margin-top:1px}
+    .nav-section{padding:20px 12px 8px}
+    .nav-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);font-weight:500;padding:0 8px;margin-bottom:6px;display:block}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:var(--ink-soft);text-decoration:none;cursor:pointer;transition:background .15s,color .15s;margin-bottom:2px;font-weight:400}
+    .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
+    .nav-item:hover{background:var(--cream);color:var(--ink)}
+    .nav-item.active{background:var(--accent-light);color:var(--accent);font-weight:500}
+    .nav-item.active svg{opacity:1}
+    .sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border)}
+    .user-card{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;transition:background .15s;cursor:pointer}
+    .user-card:hover{background:var(--cream)}
+    .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:white;flex-shrink:0}
+    .user-name{font-size:13px;font-weight:500;color:var(--ink);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .user-role{font-size:11px;color:var(--ink-faint);display:block}
+
+    /* ── Main ── */
+    .main{display:flex;flex-direction:column;min-height:100vh;overflow:hidden}
+
+    /* ── Topbar ── */
+    .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+    .page-title{font-size:20px;font-weight:300;color:var(--ink);letter-spacing:-.3px}
+    .topbar-right{display:flex;align-items:center;gap:12px}
+    .topbar-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);transition:background .15s;position:relative}
+    .topbar-btn:hover{background:var(--cream)}
+    .topbar-btn svg{width:16px;height:16px}
+    .notif-badge{width:7px;height:7px;background:var(--accent);border-radius:50%;position:absolute;top:7px;right:7px;border:1.5px solid white}
+    .btn-add{display:flex;align-items:center;gap:7px;padding:8px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,transform .1s;text-decoration:none}
+    .btn-add:hover{background:#1D4ED8;transform:translateY(-1px)}
+    .btn-add svg{width:14px;height:14px}
+
+    /* ── Notifications popover ── */
+    .notif-popover{position:absolute;top:44px;right:0;width:340px;max-width:calc(100vw - 32px);background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.12);z-index:50;display:none;animation:fadeDown .2s ease}
+    .notif-popover.active{display:block}
+    @keyframes fadeDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .notif-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+    .notif-header-title{font-size:14px;font-weight:600;color:var(--ink)}
+    .notif-header-action{font-size:12px;color:var(--accent);cursor:pointer;font-weight:500}
+    .notif-list{max-height:300px;overflow-y:auto}
+    .notif-item{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item:hover{background:var(--cream)}
+    .notif-item.unread{background:var(--accent-light)}
+    .notif-dot-sm{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+    .notif-dot-sm.blue{background:var(--accent)}
+    .notif-dot-sm.green{background:var(--success)}
+    .notif-dot-sm.amber{background:var(--warning)}
+    .notif-content{flex:1;min-width:0}
+    .notif-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px}
+    .notif-desc{font-size:12px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .notif-time{font-size:11px;color:var(--ink-faint);flex-shrink:0}
+    .notif-footer{padding:10px 16px;border-top:1px solid var(--border);text-align:center}
+    .notif-footer a{font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:500}
+
+    /* ── Page body ── */
+    .page-body{padding:32px;flex:1;animation:fadeIn .35s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── Flash messages ── */
+    .flash-wrap{padding:0 32px;padding-top:16px}
+    .flash{padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:500;margin-bottom:8px}
+    .flash.success{background:#ECFDF5;color:var(--success);border:1px solid #A7F3D0}
+    .flash.error{background:#FEF2F2;color:var(--error);border:1px solid #FECACA}
+    .flash.info{background:var(--accent-light);color:var(--accent);border:1px solid #BFDBFE}
+
+    /* ── Buttons ── */
+    .btn-primary{padding:12px 24px;background:var(--accent);color:white;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary:hover{background:#1D4ED8}
+    .btn-secondary{padding:12px 20px;background:var(--cream);color:var(--ink-soft);border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    .btn-secondary:hover{background:#EDE9E0}
+    .btn-danger{padding:5px 10px;background:#FEF2F2;color:#DC2626;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500}
+    .btn-edit{padding:5px 10px;background:var(--accent-light);color:var(--accent);border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500}
+
+    /* ── Badges ── */
+    .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:500}
+    .badge-blue{background:var(--accent-light);color:var(--accent)}
+    .badge-purple{background:#F5F3FF;color:#7C3AED}
+    .badge-gray{background:#F3F4F6;color:#6B7280}
+    .badge-amber{background:#FFFBEB;color:#D97706}
+    .badge-green{background:#ECFDF5;color:#059669}
+
+    /* ── Cards ── */
+    .card{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .card-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .card-title{font-size:14px;font-weight:600;color:var(--ink)}
+    .card-action{font-size:12px;color:var(--accent);text-decoration:none;font-weight:500;cursor:pointer}
+    .card-action:hover{text-decoration:underline}
+
+    /* ── Forms ── */
+    .form-group{margin-bottom:18px}
+    .form-group label{display:block;font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:7px}
+    .form-control{width:100%;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:var(--cream);border:1.5px solid var(--border);border-radius:9px;outline:none;transition:border-color .2s,background .2s,box-shadow .2s}
+    .form-control:focus{border-color:var(--accent);background:var(--white);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+
+    /* ── Mobile overlay ── */
+    .menu-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;opacity:0;transition:opacity .3s}
+    .menu-overlay.active{display:block;opacity:1}
+    .hamburger-btn{display:none;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--white);align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);margin-right:12px;flex-shrink:0}
+    .hamburger-btn svg{width:18px;height:18px}
+
+    /* ── Responsive ── */
+    @media(max-width:900px){
+      .app{grid-template-columns:1fr}
+      .sidebar{position:fixed;top:0;left:0;z-index:100;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);height:100vh;display:flex!important}
+      .sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.15)}
+      .hamburger-btn{display:flex}
+      .topbar{padding:0 16px}
+      .page-body{padding:20px 16px}
+      .form-grid-2{grid-template-columns:1fr}
+      .notif-popover{width:300px;right:-8px}
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div id="menuOverlay" class="menu-overlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="{{ url_for('static', filename='InShot_20260428_2256368221.png') }}" alt="Futura Expertise" style="height: 50px; width: auto; object-fit: contain;">
+
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-label">Principal</span>
+      <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Tableau de bord
+      </a>
+      <a href="{{ url_for('saisie') }}" class="nav-item {% if request.endpoint in ['saisie','saisie_edit'] %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Nouvelle saisie
+      </a>
+      <a href="{{ url_for('historique') }}" class="nav-item {% if request.endpoint == 'historique' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4"/><polyline points="3 3 3 7 7 7"/></svg>
+        Historique
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-label">Gestion</span>
+    
+      <a href="{{ url_for('conge') }}" class="nav-item {% if request.endpoint == 'conge' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Demande de congé
+      </a>
+     <a href="{{ url_for('rapports') }}" class="nav-item {% if request.endpoint == 'rapports' %}active{% endif %}">
+    <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    Rapports
+</a>       
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-label">Compte</span>
+      <a href="{{ url_for('logout') }}" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar">{{ current_user.initials }}</div>
+        <div style="flex:1;min-width:0">
+          <span class="user-name">{{ current_user.full_name }}</span>
+          <span class="user-role">{{ current_user.role|capitalize }}</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center">
+        <button class="hamburger-btn" onclick="toggleSidebar()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+        <div class="page-title">{% block page_title %}{% endblock %}</div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Notifications -->
+        <div style="position:relative">
+          <button class="topbar-btn" onclick="toggleNotif(event)" id="notifBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            {% if notif_unread > 0 %}<span class="notif-badge"></span>{% endif %}
+          </button>
+          <div class="notif-popover" id="notifPopover">
+            <div class="notif-header">
+              <span class="notif-header-title">Notifications</span>
+              <span class="notif-header-action" onclick="markAllRead()">Tout marquer comme lu</span>
+            </div>
+            <div class="notif-list" id="notifList">
+              {% for n in notifs %}
+              <div class="notif-item {% if not n.lu %}unread{% endif %}" onclick="markOneRead({{ n.id }}, this)">
+                <div class="notif-dot-sm {{ n.couleur }}"></div>
+                <div class="notif-content">
+                  <div class="notif-title">{{ n.titre }}</div>
+                  <div class="notif-desc">{{ n.description }}</div>
+                </div>
+                <span class="notif-time">{{ n.time_ago }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="notif-footer"><a href="#">Voir toutes →</a></div>
+          </div>
+        </div>
+
+        <a href="{{ url_for('saisie') }}" class="btn-add">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nouvelle saisie
+        </a>
+      </div>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for cat, msg in messages %}
+            <div class="flash {{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Page content -->
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script>
+  // Sidebar mobile
+  function toggleSidebar(){
+    document.querySelector('.sidebar').classList.toggle('open');
+    document.getElementById('menuOverlay').classList.toggle('active');
+  }
+  function closeSidebar(){
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('menuOverlay').classList.remove('active');
+  }
+
+  // Notifications popover
+  function toggleNotif(e){
+    e.stopPropagation();
+    document.getElementById('notifPopover').classList.toggle('active');
+  }
+  document.addEventListener('click', function(e){
+    const p = document.getElementById('notifPopover');
+    if(p && p.classList.contains('active') && !p.contains(e.target) && !e.target.closest('#notifBtn')){
+      p.classList.remove('active');
+    }
+  });
+
+  function markOneRead(id, el){
+    fetch(`/api/notifications/${id}/read`, {method:'POST'});
+    el.classList.remove('unread');
+    // remove badge if no more unread
+    const unread = document.querySelectorAll('.notif-item.unread').length;
+    if(unread === 0) document.querySelector('.notif-badge')?.remove();
+  }
+
+  function markAllRead(){
+    fetch('/api/notifications/read-all', {method:'POST'});
+    document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+    document.querySelector('.notif-badge')?.remove();
+  }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

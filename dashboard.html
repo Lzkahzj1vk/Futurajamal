@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block extra_css %}
+<style>
+  .welcome-strip{border-radius:16px;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;background:#fff;border:-0.3pxpx solid var(--border)}
+  .welcome-text h2{font-size:24px;font-weight:300;color:var(--ink);letter-spacing:-.4px;margin-bottom:4px}
+  .welcome-text p{font-size:13px;color:var(--ink-faint)}
+  .meta-date{font-size:28px;font-weight:300;color:var(--ink-faint);letter-spacing:-.5px}
+  .meta-day{font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;transition:box-shadow .2s}
+  .stat-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07)}
+  .stat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .stat-icon-wrap{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+  .stat-icon-wrap svg{width:17px;height:17px}
+  .stat-icon-wrap.blue{background:var(--accent-light);color:var(--accent)}
+  .stat-icon-wrap.green{background:#ECFDF5;color:#059669}
+  .stat-icon-wrap.amber{background:#FFFBEB;color:#D97706}
+  .stat-icon-wrap.purple{background:#F5F3FF;color:#7C3AED}
+  .stat-trend{font-size:11px;font-weight:500;padding:3px 7px;border-radius:20px;background:var(--cream);color:var(--ink-faint)}
+  .stat-val{font-size:30px;font-weight:300;color:var(--ink);letter-spacing:-1px;display:block;margin-bottom:4px}
+  .stat-desc{font-size:12.5px;color:var(--ink-faint)}
+
+  .two-col{display:grid;grid-template-columns:1fr 340px;gap:20px}
+
+  /* Bar chart */
+  .week-chart{padding:20px}
+  .chart-bars{display:flex;align-items:flex-end;gap:10px;height:140px;margin-bottom:10px}
+  .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end;background:var(--cream);border-radius:6px;overflow:hidden}
+  .bar{width:100%;background:var(--accent);border-radius:6px;min-height:3px;opacity:.85;transition:height .7s cubic-bezier(.34,1.56,.64,1)}
+  .bar.today{background:var(--ink);opacity:1}
+  .bar.weekend{background:var(--border);opacity:1}
+  .bar-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px}
+  .bar-val{font-size:11px;font-weight:500;color:var(--ink-soft)}
+  .chart-total{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border)}
+  .chart-total-label{font-size:12.5px;color:var(--ink-faint)}
+  .chart-total-val{font-weight:300;color:var(--ink);letter-spacing:-.5px}
+
+  /* Activity */
+  .activity-item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);transition:background .15s}
+  .activity-item:last-child{border-bottom:none}
+  .activity-item:hover{background:var(--cream)}
+  .activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+  .dot-blue{background:var(--accent)}.dot-green{background:#059669}.dot-amber{background:#D97706}.dot-purple{background:#7C3AED}.dot-gray{background:#9CA3AF}
+  .activity-info{flex:1;min-width:0}
+  .activity-title{font-size:13.5px;font-weight:500;color:var(--ink);margin-bottom:2px}
+  .activity-sub{font-size:12px;color:var(--ink-faint)}
+  .activity-right{text-align:right;flex-shrink:0}
+  .activity-hours{font-size:16px;font-weight:300;color:var(--ink);display:block}
+  .activity-date{font-size:11px;color:var(--ink-faint)}
+
+  /* Quick actions */
+  .quick-actions{padding:16px;display:flex;flex-direction:column;gap:10px}
+  .quick-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;text-decoration:none}
+  .quick-btn:hover{border-color:var(--accent);background:var(--accent-light);transform:translateX(2px)}
+  .quick-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .quick-icon svg{width:17px;height:17px}
+  .quick-icon.blue{background:var(--accent-light);color:var(--accent)}
+  .quick-icon.green{background:#ECFDF5;color:#059669}
+  .quick-icon.amber{background:#FFFBEB;color:#D97706}
+  .quick-title{font-size:13px;font-weight:500;color:var(--ink);display:block}
+  .quick-desc{font-size:11.5px;color:var(--ink-faint);margin-top:1px;display:block}
+
+  @media(max-width:900px){
+    .stats-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .stat-val{font-size:24px}
+    .two-col{grid-template-columns:1fr}
+    .welcome-strip{flex-direction:column;align-items:flex-start;gap:12px}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+
+  <!-- Welcome -->
+  <div class="welcome-strip">
+    <div class="welcome-text">
+      <h2>Bonjour, {{ current_user.prenom }} {{current_user.nom}}</h2>
+      <p>Voici un aperçu de votre activité cette semaine</p>
+    </div>
+    <div style="text-align:right">
+      <div class="meta-date" id="currentDate"></div>
+      <div class="meta-day" id="currentDay"></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon-wrap blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+      <span class="stat-val">{{ heures_semaine|round(1) }}h</span>
+      <div class="stat-desc">Heures cette semaine</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon-wrap green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h.01M7 20v-4"/><path d="M12 20V10"/><path d="M17 20V4"/></svg>
+        </div>
+      </div>
+      <span class="stat-val">{{ projets_actifs }}</span>
+      <div class="stat-desc">Projets actifs</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon-wrap amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="stat-trend">Ce mois</div>
+      </div>
+      <span class="stat-val">{{ heures_mois|round(1) }}h</span>
+      <div class="stat-desc">Heures ce mois</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon-wrap purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+      </div>
+      <span class="stat-val">{{ saisies_semaine }}</span>
+      <div class="stat-desc">Saisies cette semaine</div>
+    </div>
+  </div>
+
+  <!-- Two columns -->
+  <div class="two-col">
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Week chart -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Activité de la semaine</span>
+          <a href="{{ url_for('historique') }}" class="card-action">Voir tout</a>
+        </div>
+        <div class="week-chart">
+          <div class="chart-bars" id="weekBars"></div>
+          <div class="chart-total">
+            <span class="chart-total-label">Total semaine</span>
+            <span class="chart-total-val">{{ heures_semaine|round(1) }}h / 40h cible</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent saisies -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Dernières saisies</span>
+          <a href="{{ url_for('historique') }}" class="card-action">Historique</a>
+        </div>
+        <div>
+          {% set dot_map = {'Développement':'dot-blue','Conseil':'dot-purple','Réunion':'dot-gray','Formation':'dot-amber'} %}
+          {% for s in recent_saisies %}
+          <div class="activity-item">
+            <div class="activity-dot {{ dot_map.get(s.type_activite, 'dot-gray') }}"></div>
+            <div class="activity-info">
+              <div class="activity-title">{{ s.type_activite }}</div>
+              <div class="activity-sub">{{ s.projet_display }} {% if s.commentaire %}— {{ s.commentaire }}{% endif %}</div>
+            </div>
+            <div class="activity-right">
+              <span class="activity-hours">{{ s.heures }}h</span>
+              <span class="activity-date">
+                {% if s.date == today %}Aujourd'hui
+                {% elif (today - s.date).days == 1 %}Hier
+                {% else %}{{ s.date.strftime('%d/%m') }}{% endif %}
+              </span>
+            </div>
+          </div>
+          {% else %}
+          <div style="padding:24px 20px;color:var(--ink-faint);font-size:13px">Aucune saisie pour le moment.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: quick actions -->
+    <div class="card" style="align-self:start">
+      <div class="card-header">
+        <span class="card-title">Actions rapides</span>
+      </div>
+      <div class="quick-actions">
+        <a href="{{ url_for('saisie') }}" class="quick-btn">
+          <div class="quick-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+          <div>
+            <span class="quick-title">Nouvelle saisie</span>
+            <span class="quick-desc">Enregistrer votre activité</span>
+          </div>
+        </a>
+        <a href="{{ url_for('conge') }}" class="quick-btn">
+          <div class="quick-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div>
+            <span class="quick-title">Demande de congé</span>
+            <span class="quick-desc">Soumettre une demande</span>
+          </div>
+        </a>
+        <a href="{{ url_for('historique') }}" class="quick-btn">
+          <div class="quick-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4"/><polyline points="3 3 3 7 7 7"/></svg>
+          </div>
+          <div>
+            <span class="quick-title">Historique</span>
+            <span class="quick-desc">Consulter vos saisies</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Date
+  const now = new Date();
+  document.getElementById('currentDate').textContent =
+    now.toLocaleDateString('fr-FR', {day:'2-digit', month:'long'});
+  document.getElementById('currentDay').textContent =
+    now.toLocaleDateString('fr-FR', {weekday:'long'}) + ' · ' + now.getFullYear();
+
+  // Week bars from Flask data
+  const weekData = {{ week_bars | tojson }};
+  const container = document.getElementById('weekBars');
+  weekData.forEach(d => {
+    const pct = Math.min((d.hours / 10) * 100, 100);
+    const cls = d.today ? 'today' : d.weekend ? 'weekend' : '';
+    container.innerHTML += `
+      <div class="chart-col">
+        <span class="bar-val">${d.hours > 0 ? d.hours + 'h' : ''}</span>
+        <div class="bar-wrap">
+          <div class="bar ${cls}" style="height:0%" data-pct="${pct}"></div>
+        </div>
+        <span class="bar-label">${d.label}</span>
+      </div>`;
+  });
+  // animate
+  setTimeout(() => {
+    document.querySelectorAll('.bar').forEach(b => {
+      b.style.height = b.dataset.pct + '%';
+    });
+  }, 100);
+</script>
+{% endblock %}

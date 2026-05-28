@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+{% block title %}Historique{% endblock %}
+{% block page_title %}Historique{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hist-card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .hist-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .hist-header h2{font-size:16px;font-weight:600;color:var(--ink)}
+  .hist-header p{font-size:13px;color:var(--ink-faint);margin-top:2px}
+  .hist-table{width:100%;border-collapse:collapse}
+  .hist-table th{padding:11px 20px;text-align:left;font-size:12px;font-weight:500;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--cream)}
+  .hist-table td{padding:13px 20px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--ink);transition:background .15s}
+  .hist-table tr:hover td{background:var(--cream)}
+  .td-hours{text-align:right;font-size:17px;font-weight:300;color:var(--ink)}
+  .td-actions{text-align:center}
+  .actions-wrap{display:flex;justify-content:center;gap:8px}
+
+  /* Footer total bar */
+  .hist-footer-total{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--cream);border-top:2px solid var(--border)}
+  .hist-footer-total span{font-size:13px;font-weight:500;color:var(--ink-soft)}
+  .hist-footer-total strong{font-size:18px;font-weight:300;color:var(--ink)}
+
+  /* Pagination styles */
+  .pagination-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:12px}
+  .pagination-info{font-size:12.5px;color:var(--ink-faint)}
+  .pagination-buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pagination-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--cream);color:var(--ink-soft);border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;text-decoration:none;cursor:pointer;transition:all .15s}
+  .pagination-btn:hover:not(.disabled):not(.active){border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+  .pagination-btn.active{background:var(--accent);border-color:var(--accent);color:white;cursor:default}
+  .pagination-btn.disabled{opacity:0.5;cursor:not-allowed}
+
+  /* empty state */
+  .empty-state{padding:48px 24px;text-align:center;color:var(--ink-faint)}
+  .empty-state svg{width:40px;height:40px;opacity:.3;margin-bottom:12px}
+  .empty-state p{font-size:14px}
+
+  /* summary bar */
+  .summary-bar{display:flex;gap:24px;padding:14px 24px;background:var(--accent-light);border-bottom:1px solid var(--border)}
+  .summary-item{font-size:13px;color:var(--ink-soft)}
+  .summary-item strong{color:var(--accent);font-weight:600}
+
+  @media(max-width:700px){
+    .hist-table th:nth-child(4),.hist-table td:nth-child(4){display:none}
+    .hist-table{font-size:12px}
+    .hist-table td,.hist-table th{padding:10px 12px}
+  }
+  /* Filter bar styles */
+  .filter-bar{background:#fff;border-bottom:1px solid var(--border);padding:16px 24px}
+  .filter-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px}
+  .filter-group{display:flex;flex-direction:column;gap:6px}
+  .filter-group label{font-size:11px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px}
+  .filter-select,.filter-input{padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;background:#fff;min-width:140px}
+  .filter-select:focus,.filter-input:focus{outline:none;border-color:var(--accent)}
+  .filter-actions{display:flex;gap:10px;margin-left:auto}
+  .btn-filter,.btn-exporter,.btn-reset{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+  .btn-filter{background:#3B82F6;border:none;color:white}
+  .btn-filter:hover{background:#1E40AF;transform:translateY(-1px)}
+  .btn-exporter{background:#fff;border:1px solid var(--border);color:#1e293b}
+  .btn-exporter:hover{background:#F1F5F9;border-color:#3B82F6;color:#3B82F6}
+  .btn-reset{background:transparent;border:1px solid var(--border);color:#64748b}
+  .btn-reset:hover{background:#F1F5F9;border-color:#3B82F6;color:#3B82F6}
+  @media(max-width:800px){.filter-row{flex-direction:column;align-items:stretch}.filter-actions{margin-left:0;justify-content:flex-end}}
+  /* Export dropdown */
+  .export-dropdown{position:relative}
+  .export-menu{position:absolute;top:100%;right:0;margin-top:8px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.1);min-width:160px;display:none;z-index:100;overflow:hidden}
+  .export-menu.show{display:block}
+  .export-menu a{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:var(--ink);text-decoration:none;transition:background .15s}
+  .export-menu a:hover{background:var(--cream);color:var(--accent)}
+  @media(max-width:700px){
+    .hist-table th:nth-child(4),
+    .hist-table td:nth-child(4),
+    .hist-table th:nth-child(7),
+    .hist-table td:nth-child(7) {
+      display: none;
+    }
+  }
+
+  .file-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:8px;vertical-align:middle;transition:transform .18s ease,filter .18s ease;}
+  .file-icon svg{width:18px;height:18px;}
+  .csv-icon{color:#22c55e;}
+  .excel-icon{color:#16a34a;}
+  .pdf-icon{color:#ef4444;}
+  .export-menu a:hover .file-icon{transform:translateY(-1px) scale(1.08);filter:drop-shadow(0 3px 8px rgba(0,0,0,.18));}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+  <div class="hist-card">
+
+    <div class="hist-header">
+      <div>
+        <h2>Historique des saisies</h2>
+        <p>{{ total_saisies }} enregistrement(s) au total</p>
+      </div>
+    
+    </div>
+
+    {% if saisies %}
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <div class="filter-row">
+    <!-- Projet / Client en premier -->
+    <div class="filter-group">
+      <label>Projet / Client</label>
+      <select id="filterProjet" class="filter-select">
+        <option value="">Tous les projets</option>
+        {% for p in projets %}
+        <option value="{{ p.id }}">{{ p.display_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Type d'activité en deuxième -->
+    <div class="filter-group">
+      <label>Type d'activité</label>
+      <select id="filterType" class="filter-select">
+        <option value="">Tous les types</option>
+        <option value="Liste des plans">Liste des plans</option>
+        <option value="Note de Calcul d'Eclairement">Note de Calcul d'Eclairement</option>
+        <option value="Prises de courant et forces">Prises de courant et forces</option>
+        <option value="Synoptiques CFO">Synoptiques CFO</option>
+        <option value="Carnet des câbles CFO">Carnet des câbles CFO</option>
+        <option value="Bilan de puissance">Bilan de puissance</option>
+        <option value="Note de Calcul BT">Note de Calcul BT</option>
+        <option value="Note de Calcul MT">Note de Calcul MT</option>
+        <option value="Note de Calcul DC">Note de Calcul DC</option>
+        <option value="Note de Calcul Batterie">Note de Calcul Batterie</option>
+        <option value="Note de Calcul CDC">Note de Calcul CDC</option>
+        <option value="Note de Calcul de mise à la terre">Note de Calcul de mise à la terre</option>
+        <option value="Bilan Thermique">Bilan Thermique</option>
+        <option value="Note de Calcul paratonnerre">Note de Calcul paratonnerre</option>
+        <option value="Eclairage">Eclairage</option>
+        <option value="Réseau sous dallage">Réseau sous dallage</option>
+        <option value="Réservations">Réservations</option>
+        <option value="Plans des locaux techniques">Plans des locaux techniques</option>
+        <option value="Mise à la terre et protection foudre">Mise à la terre et protection foudre</option>
+        <option value="Plans CDC">Plans CDC</option>
+        <option value="Plans des locaux types">Plans des locaux types</option>
+        <option value="Réseau extérieur">Réseau extérieur</option>
+        <option value="Photovoltaïque">Photovoltaïque</option>
+        <option value="Schémas des tableaux">Schémas des tableaux</option>
+        <option value="Synoptiques CFA">Synoptiques CFA</option>
+        <option value="Réseau wifi">Réseau wifi</option>
+        <option value="Sonorisation">Sonorisation</option>
+        <option value="Audiovisuel">Audiovisuel</option>
+        <option value="Précâblage informatique">Précâblage informatique</option>
+        <option value="Système sécurité incendie">Système sécurité incendie</option>
+        <option value="Vidéosurveillance">Vidéosurveillance</option>
+        <option value="Contrôle d'accès et d'intrusion">Contrôle d'accès et d'intrusion</option>
+        <option value="Gestion d'éclairage">Gestion d'éclairage</option>
+        <option value="Aménagement local PCS">Aménagement local PCS</option>
+        <option value="Carnet des câbles CFA">Carnet des câbles CFA</option>
+        <option value="Gestion domotique">Gestion domotique</option>
+        <option value="GTC">GTC</option>
+        <option value="TBE">TBE</option>
+        <option value="Congé">Congé</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Date de début</label>
+      <input type="date" id="filterDateDebut" class="filter-input">
+    </div>
+
+    <div class="filter-group">
+      <label>Date de fin</label>
+      <input type="date" id="filterDateFin" class="filter-input">
+    </div>
+
+    <div class="filter-actions">
+      <button id="btnFilter" class="btn-filter">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22 3 2 3 10 13 10 21 14 18 14 13 22 3"/>
+        </svg>
+        Filtrer
+      </button>
+
+  
+      <button id="btnReset" class="btn-reset">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<div style="overflow-x:auto">
+  <table class="hist-table">
+    <thead>
+      <tr>
+        <th>Date / Période</th>
+        <th>Projet / Client</th>
+        <th>Type</th>
+        <th>Commentaire</th>
+        <th style="text-align:right">Heures</th>
+        <th style="text-align:center">Actions</th>
+        <th>Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in page_saisies %}
+      <tr>
+        <td style="color:var(--ink-soft)">
+          {% if s.type_activite == 'Congé' and s.conge_date_debut %}
+            {{ s.conge_date_debut.strftime('%d/%m/%Y') }} → {{ s.conge_date_fin.strftime('%d/%m/%Y') }}
+          {% else %}
+            {{ s.date.strftime('%d/%m/%Y') }}
+          {% endif %}
+        </td>
+        <td style="font-weight:500">{{ s.projet_display }}</td>
+        <td><span class="badge {{ s.badge_class }}">{{ s.type_activite }}</span></td>
+        <td style="color:var(--ink-soft)">{{ s.commentaire or '—' }}</td>
+        <td class="td-hours">
+  {% if s.type_activite == 'Congé' %}
+    {% if s.conge_date_debut and s.conge_date_fin and s.conge_date_debut != s.conge_date_fin %}
+    
+      {{ (s.heures * 8)|int if s.heures < 24 else s.heures }}h
+    {% elif s.heures == 1 %}
+  
+      8h
+    {% else %}
+      
+      {{ s.heures }}h
+    {% endif %}
+  {% else %}
+    {{ s.heures }}h
+  {% endif %}
+</td>
+        <td class="td-actions">
+          <div class="actions-wrap">
+            <a href="{{ url_for('saisie_edit', id=s.id) }}" class="btn-edit">Modifier</a>
+            <form method="POST" action="{{ url_for('saisie_delete', id=s.id) }}"
+              onsubmit="return confirm('Supprimer cette saisie ?')">
+              <button type="submit" class="btn-danger">Supprimer</button>
+            </form>
+          </div>
+        </td>
+        <td>
+          {% if s.statut == 'en_attente' %}
+            <span class="badge" style="background:#FEF3C7;color:#D97706">⏳ En attente</span>
+          {% elif s.statut == 'valide' %}
+            <span class="badge" style="background:#D1FAE5;color:#059669">✓ Validé</span>
+          {% elif s.statut == 'rejete' %}
+            <span class="badge" style="background:#FEE2E2;color:#DC2626">✗ Rejeté</span>
+          {% else %}
+            <span class="badge" style="background:#E2E8F0;color:#475569">{{ s.statut or 'en attente' }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4" style="padding:12px 20px;font-size:13px;font-weight:500;color:var(--ink-soft);border-top:2px solid var(--border);background:var(--cream)">
+          Total (page)
+          {% set conge_hours = page_saisies|selectattr('type_activite', 'equalto', 'Congé')|sum(attribute='heures') %}
+          {% if conge_hours > 0 %}(dont {{ conge_hours }}h de Congé){% endif %}
+        </td>
+        <td style="padding:12px 20px;text-align:right;font-size:18px;font-weight:300;color:var(--ink);border-top:2px solid var(--border);background:var(--cream)">
+          {{ page_total_heures }}h
+        </td>
+        <td colspan="2" style="border-top:2px solid var(--border);background:var(--cream"></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+    <!-- Pagination -->
+    <div class="pagination-wrap">
+      <span class="pagination-info">
+        Affichage {{ start_index }}–{{ end_index }} sur {{ total_saisies }} entrées
+      </span>
+      <div class="pagination-buttons">
+        {% if page > 1 %}
+        <a href="{{ url_for('historique', page=page-1, **request.args) }}" class="pagination-btn">← Préc.</a>
+        {% else %}
+        <span class="pagination-btn disabled">← Préc.</span>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+          {% if p == page %}
+            <span class="pagination-btn active">{{ p }}</span>
+          {% else %}
+            <a href="{{ url_for('historique', page=p, **request.args) }}" class="pagination-btn">{{ p }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('historique', page=page+1, **request.args) }}" class="pagination-btn">Suiv. →</a>
+        {% else %}
+        <span class="pagination-btn disabled">Suiv. →</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p>Aucune saisie enregistrée pour le moment.</p>
+      <a href="{{ url_for('saisie') }}" class="btn-primary" style="margin-top:16px;display:inline-flex">
+        Créer ma première saisie
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Filtrage dynamique
+  const btnFilter = document.getElementById('btnFilter');
+  const btnReset = document.getElementById('btnReset');
+  
+  function getFilterParams() {
+    const type = document.getElementById('filterType')?.value || '';
+    const projet = document.getElementById('filterProjet')?.value || '';
+    const dateDebut = document.getElementById('filterDateDebut')?.value || '';
+    const dateFin = document.getElementById('filterDateFin')?.value || '';
+    
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (projet) params.append('projet', projet);
+    if (dateDebut) params.append('date_debut', dateDebut);
+    if (dateFin) params.append('date_fin', dateFin);
+    params.append('page', 1);
+    
+    return params;
+  }
+  
+  if (btnFilter) {
+    btnFilter.addEventListener('click', () => {
+      const params = getFilterParams();
+      window.location.href = `/historique?${params.toString()}`;
+    });
+  }
+  
+  if (btnReset) {
+    btnReset.addEventListener('click', () => {
+      window.location.href = '/historique';
+    });
+  }
+  
+  // Export Dropdown
+  const btnExporter = document.getElementById('btnExporter');
+  const exportMenu = document.getElementById('exportMenu');
+
+  if (btnExporter && exportMenu) {
+    btnExporter.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      exportMenu.classList.toggle('show');
+    });
+
+    // Fermer le menu en cliquant ailleurs
+    document.addEventListener('click', function() {
+      exportMenu.classList.remove('show');
+    });
+
+    // Empêcher la fermeture quand on clique sur le menu
+    exportMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // Gérer le clic sur les options d'export
+    exportMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const format = link.dataset.format;
+        if (format) {
+          const params = getFilterParams();
+          window.location.href = `/exporter/${format}?${params.toString()}`;
+          exportMenu.classList.remove('show');
+        }
+      });
+    });
+  }
+  
+  // Pré-remplir les filtres avec les valeurs actuelles
+  {% if filter_type %}
+  document.getElementById('filterType').value = '{{ filter_type }}';
+  {% endif %}
+  {% if filter_projet %}
+  document.getElementById('filterProjet').value = '{{ filter_projet }}';
+  {% endif %}
+  {% if filter_date_debut %}
+  document.getElementById('filterDateDebut').value = '{{ filter_date_debut }}';
+  {% endif %}
+  {% if filter_date_fin %}
+  document.getElementById('filterDateFin').value = '{{ filter_date_fin }}';
+  {% endif %}
+</script>
+{% endblock %}
